@@ -30,7 +30,7 @@ import ipaddr
 import math
 
 
-DEBUG = 0
+DEBUG = 1
 
 ################################################
 

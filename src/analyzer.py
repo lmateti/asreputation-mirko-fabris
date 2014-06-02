@@ -252,14 +252,14 @@ class Analyzer:
         
 
         ar = area.T(x_axis = x_axis,
-                    y_axis = y_axis
-                    , 
+                    y_axis = y_axis, 
                     y_grid_interval = interval
                     )
         
 
         count = 0
         max_count = len( selectedAS )
+        print selectedAS
         for tmpAS in selectedAS:
             if count == 0:
                 ar.add_plot(bar_plot.T(label=str(tmpAS),
@@ -272,6 +272,7 @@ class Analyzer:
             count+=1
     
         ar.draw(canvas1)
+        
         canvas1.close()
     
         print "Finished generating graph: ", name_str
