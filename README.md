@@ -4,6 +4,7 @@ asreputation-luka-matetic
 Changes of the AS reputation code written by Tomislav Dejdar and reworked Mirko Fabris done by Luka Matetic
 
 Here are steps for a quick start with this program:
+
 1. Download RIB and UPDATES data from a collector of choice.
 
 2. To use the downloaded RIB, first it must be parsed with zebra-dump-parser written in Pearl which
@@ -22,9 +23,9 @@ location of the newly parsed RIB data must also be put into config.ini.
 This can simply be done by editting config.ini with notepad or similar editor and 
 by replacing the existing RIB/NameOfRIB.parsed with the new name.
 
-4. There must be at least one autonomous system selected by its autonomous system number if using the 
+5. There must be at least one autonomous system selected by its autonomous system number if using the 
 pref analysis type or at least two autonomous systems selected by their autonomous system number if using the 
 link analysis type. In order to get good results, set time_start parameter to match the name of the RIB
 and UPDATES data (notice that UPDATES data must also be taken at the same time).
 
-5. In order to start the program, module start.py must be ran using a Python 2.7 interpreter. 
+6. In order to start the program, module start.py must be ran using a Python 2.7 interpreter. 
