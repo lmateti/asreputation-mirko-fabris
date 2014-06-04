@@ -25,7 +25,6 @@ from core import Print
 import cProfile
 import pstats
 
-
 #-----------------------------config file constants-----------------------------
 CONFIG_FILENAME = 'config.ini'
 SECTION_NAME = 'Variables'
@@ -47,7 +46,14 @@ ANALYSIS_LINK = 'link'
 VERBOSE = 'verbose'
 PROFILING = 'profiling'
 
+UPDATES_DIR = "updates_folder_input"
+TEXT_OUTPUT_LINKS_REP = 'links_reputation_folder_output'
+TEXT_OUTPUT_PRE_SOURC_INF = 'prefix_source_information_folder_output'
+TEXT_OUTPUT_PREF_PERC = 'prefix_percentage_folder_output'
+TEXT_OUTPUT_REP = 'prefix_reputation_folder_output'
+TEXT_OUTPUT_RIB = 'RIBdata_folder_output'
 
+DEBUG = 'DEBUG'
     
 try:
     config = ConfigParser.ConfigParser()    
@@ -104,7 +110,27 @@ try:
     #profiling
     profiling = int( config.get(SECTION_NAME, PROFILING ) )
     
-    
+    #updates input folder path
+    updates_input = config.get(SECTION_NAME, UPDATES_DIR)
+
+    #links method reputation output folder path and filename
+    linksRep_output = config.get(SECTION_NAME, TEXT_OUTPUT_LINKS_REP)
+
+    #prefix source information output folder path and filename
+    prefInf_output = config.get(SECTION_NAME, TEXT_OUTPUT_PRE_SOURC_INF)
+
+    #prefix percentage output folder path and filename
+    prefPerc_output = config.get(SECTION_NAME, TEXT_OUTPUT_PREF_PERC)
+
+    #pref method reputation output folder path and filename
+    prefRep_output = config.get(SECTION_NAME, TEXT_OUTPUT_REP)
+
+    #Data from RIB output folder path and filename
+    rib_output = config.get(SECTION_NAME, TEXT_OUTPUT_RIB)
+
+    #Debuging mode (1 or 0)
+    debug = int(config.get(SECTION_NAME, DEBUG))
+	
     print "config loaded ok"
 except:
     print "Error loading configuration from config.ini:\n---", sys.exc_info()[1]
@@ -114,7 +140,9 @@ except:
     
 def run():
     analyzer = Analyzer( time_start, time_window, time_limit, preparsed_RIB, 
-                         selectedAS, text_output, size_x, size_y )
+                         selectedAS, text_output, size_x, size_y,
+			 updates_input, linksRep_output, prefInf_output, prefPerc_output,
+			 prefRep_output, rib_output, debug)
     
     
     #so we can calculate total time this program used

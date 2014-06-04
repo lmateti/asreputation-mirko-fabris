@@ -29,13 +29,7 @@ import glob
 import ipaddr
 import math
 
-
-DEBUG = 1
-
 ################################################
-
-
-
 ################################################
 
 #base Prefix class - it's not always used due to speed gain by using just tuples
@@ -63,33 +57,7 @@ class Prefix:
 		self.prefix = prefix
 		self.lenght = lenght
 
-
-
 ################################################
-
-
-class As:				#base AS class
-
-	#constructor takes integer AS number
-	def __init__(self, AS):		
-		self.AS = AS
-
-	#returns integer AS number
-	def GetIntegerAs(self):		
-		return self.AS
-
-	#returns string AS number
-	def GetStringAs(self):		
-		return str(self.AS)
-				
-	#sets AS number, takes integer AS number as argument				
-	def SetAs(self, AS):		
-		self.AS = AS
-
-
-
-################################################
-
 
 #class of AS PATH
 class AsPath():				
@@ -101,32 +69,28 @@ class AsPath():
 
 	#prepending an AS to the path
 	def Prepend(self, AS):				
-		self.path = [As(AS)] + self.path
-
+		self.path = [AS] + self.path
 	
 	def Copy(self):
 		as_temp = AsPath()
 		
 		for elem in self.path:
-			as_temp.Postpend(As(elem.GetIntegerAs()))
+			as_temp.Postpend(elem)
 
 		return as_temp
 
-
 	#postpendign an AS to the path
 	def Postpend(self, AS):				
-		self.path = self.path + [As(AS)]
+		self.path = self.path + [AS]
 		
-
 	#returns originating AS number
 	def GetAS0(self):				
 		return self.path[len(self.path)-1]
 
-
 	#returns integer originating AS number
 	def GetIntAS0(self):				
 		temp = self.GetAS0()
-		return temp.GetIntegerAs()
+		return temp
 
 	#removes aggregated AS nubmers in AS Path
 	def RemoveAggregate(self):			
@@ -143,18 +107,16 @@ class AsPath():
 		
 		self.path[i:] = []
 
-
 	#return string of complete AS Path
 	def ReturnString(self):				
 
 		temp = ''
 
 		for elem in self.path:
-			temp = temp + elem.GetStringAs() + ' '
+			temp = temp + str(elem) + ' '
 
 		temp = temp[:-1]
 		return temp
-
 
 	#removes double ASes in AS Path
 	def RemoveDouble(self):				
@@ -162,13 +124,11 @@ class AsPath():
 		as_temp_list = []
 		
 		for elem in self.path:
-			if elem.GetIntegerAs() not in as_temp_list:
-				as_temp_list.append( elem.GetIntegerAs() )
+			if elem not in as_temp_list:
+				as_temp_list.append( elem )
 				path_temp.append(elem)
 
 		self.path = path_temp
-		
-
 
 #Finds changed links between this path (path in this instance of AsPath) 
 #and of argument AS Path (newpath). Returns #dictionary of reputation 
@@ -189,8 +149,6 @@ class AsPath():
 
 #repinc		1: 0.25, 2: 0.5, 3: 0.25
 
-
-
 	def FindLinksChanged(self, newpath):		
 		i = 0
 		j = 0
@@ -202,15 +160,15 @@ class AsPath():
 
 		while i < (len(self.path)-1):
 
-			l = int(self.path[i].GetIntegerAs())
-			r = int(self.path[i+1].GetIntegerAs())
+			l = int(self.path[i])
+			r = int(self.path[i+1])
 			j = 0
 			preserved = 0
 
 			while j < (len(newpath.path)-1):
 
-				l2 = int(newpath.path[j].GetIntegerAs())
-				r2 = int(newpath.path[j+1].GetIntegerAs())
+				l2 = int(newpath.path[j])
+				r2 = int(newpath.path[j+1])
 
 				if l2 == l:
 					if r2 == r:
@@ -240,12 +198,9 @@ class AsPath():
 
 		return repinctemp			
 
-
 #makes As path in this instance from data from bgpdump (argument data)
 #it's recommended to call methods RemoveDouble and RemoveAggregate after 
-#calling method MakePath
-
-				
+#calling method MakePath		
 
 	def MakePath(self, data):		
 		self.path = []
@@ -254,27 +209,24 @@ class AsPath():
 			if seg.type == bgp.AS_SET:
 				self.path.append('{')
 				for elem in seg.path:
-					self.path.append(As(int(elem)))
+					self.path.append(int(elem))
 				self.path.append('}')
 
 			elif seg.type == bgp.AS_SEQUENCE:
 				for elem in seg.path:
-					self.path.append(As(int(elem)))
+					self.path.append(int(elem))
 
 			else:
 				self.path.append('{')
 				for elem in seg.path:
-					self.path.append(As(int(elem)))
+					self.path.append(int(elem))
 				self.path.append('}')
-
-		
 
 ################################################
 
-
 class PrefixPath():
 
-	def __init__(self, selectedAS, gama, delta ):
+	def __init__(self, selectedAS, gama, delta, debug):
 
 		#used for storing information about paths for different 
 		#prefix-nexthop pairs
@@ -300,6 +252,8 @@ class PrefixPath():
 		self.gama = gama
 		self.delta = delta
 
+		#Used for debuging (set in config.ini)
+		self.debug = debug
 
 #Writes reputations of ASes into output file. 
 #This method is usualy called at the end of each window.
@@ -316,7 +270,6 @@ class PrefixPath():
 #
 #Lower order number means better reputation
 #Lower reputation value means better reputation
-
 
 	def FileWriteRep(self, filename):
 
@@ -345,8 +298,6 @@ class PrefixPath():
 		except ZeroDivisionError:
 			pass
 
-
-
 #########################################
 #					#
 #					#
@@ -354,8 +305,6 @@ class PrefixPath():
 #					#
 #					#
 #########################################
-
-
 
 	def WinCalc(self, window_stop):
 		
@@ -366,8 +315,6 @@ class PrefixPath():
 			else:
 				self.repinc[elem] = math.exp( (float(-1)* self.delta / 
 											(self.repinc[elem])) )
-
-
 		#multiply current reputation by gamma
 		for elem in self.rep.keys():
 			self.rep[elem] = (1-self.gama) * self.rep[elem]
@@ -383,7 +330,6 @@ class PrefixPath():
 		#new window should start with zero values for reputation increment
 		self.repinc = {}		
 
-		
 		#save values for graph (time[string], rep1, rep2,...)
 		t = formatMinutes( (window_stop - self.time_start) )
 		
@@ -401,16 +347,10 @@ class PrefixPath():
 
 		self.selectedAS_rep_history.append( tpl )
 		
-		
-
-
-
-
 #Takes increment in reputation for every AS Path changed as argument 
 #(repinctemp) and puts it in dictionary repinc
 #Dictionary repinc stores cumulative rerputation increments 
 #for current window of observation
-
 
 	#repinctemp bringes reputation increments due to current path change
 	def RepIncrement(self, repinctemp):	
@@ -421,26 +361,22 @@ class PrefixPath():
 			else:
 				self.repinc[elem] = repinctemp[elem]
 
-
-
 #Counts occurances of different prefixes for ASes in RIB
 #and puts the number in dictionary prefnum
 #key: int AS num
 #value:	number of occurances
-
-
 		
 	def PrefNumPut(self, path):
 
 		for elem in path.path:
-			if self.prefnum.has_key(int(elem.GetIntegerAs())):
-				self.prefnum[int(elem.GetIntegerAs())] += 1 
+			if self.prefnum.has_key(elem):
+				self.prefnum[elem] += 1 
 			else:
-				self.prefnum[int(elem.GetIntegerAs())] = 1
+				self.prefnum[elem] = 1
 		
-
 #Reads preparsed RIB file
 #Takes filename
+
 	def ReadRIB(self, in_time_start, filename):
 
 		self.time_start = in_time_start
@@ -453,7 +389,7 @@ class PrefixPath():
 		debug_counter = 0
 		
 		for line in f1:
-			if DEBUG:
+			if self.debug:
 				debug_counter += 1
 				if debug_counter > 100000:
 					return
@@ -512,7 +448,6 @@ class PrefixPath():
 
 #Puts key: (prefix, lenght, nexthop) | value: path   in dictionary prefpath
 
-
 				if (self.prefpath.has_key(temp_prefix))==False:				
 					self.prefpath[temp_prefix] = aspath	
 					self.PrefNumPut(aspath)
@@ -525,17 +460,14 @@ class PrefixPath():
 #					self.prefpath[temp_prefix] = aspath
 #					print "\n\n!!!!!!      \tDOUBLE PATH IN RIB\t    !!!!!!\n\n"
 
-
-
-
 #Parse updates announced
 #Every update for new prefix-nexthop combination is put in dictionary prefpath
 #Every reannounced prefix-nexthop combination changes puts new AS Path in value
 #for this prefix-nexthop
 #If the AS Path is changed, FindLinksChanged and RepIncrement methods 
 #calculate and increment rerputation in dictionary #repinc
-	def ParseUpdateAnnounced(self, data, source, path):
 
+	def ParseUpdateAnnounced(self, data, source, path):
 
 		for elem in data:
 							
@@ -554,10 +486,7 @@ class PrefixPath():
 				
 				#increments reputation for current win.	
 				self.RepIncrement(repinctemp)			
-
-
 			else:
-			
 				self.prefpath[(elem.prefix, elem.len, source)] = path
 
 				#print "\n-------------------"
@@ -566,11 +495,10 @@ class PrefixPath():
 					#str(elem.len) + "      \tNext Hop: " + str(source)
 				#print "AS-PATH: " + path.ReturnString()
 
-
-
 #Parse updates withdrawn
 #Every withdrawn update deletes affected routes from dictionary prefpath
 #It rises reputation for all ases in withdrawn path
+
 	def ParseUpdateWithdrawn(self, data, source):
 
 		for elem in data:
@@ -591,18 +519,14 @@ class PrefixPath():
 				repinctemp = oldpath.FindLinksChanged(path)
 				self.RepIncrement(repinctemp)
 
-
-
-
 ################################################
 ################################################
 ################################################
 ################################################
-
 
 class PrefixAS0Binding():
 
-	def __init__(self, selectedAS, alpha):
+	def __init__(self, selectedAS, alpha, debug):
 
 		self.prefas0 = {}
 		self.asPrefRep = {}
@@ -618,11 +542,12 @@ class PrefixAS0Binding():
 		
 		#for graph time calculation, it is set to time_start
 		self.time_start = 0   
-
+		
+		#Used for debuging (set in config.ini)
+		self.debug = debug
 
 #########################
 	
-
 	def ReadRIB(self, time, filename):
 
 		self.time_start = time
@@ -635,7 +560,7 @@ class PrefixAS0Binding():
 		debug_count = 0
 		
 		for line in f1:
-			if DEBUG:
+			if self.debug:
 				debug_count += 1
 				if debug_count > 100000:
 					return
@@ -690,6 +615,7 @@ class PrefixAS0Binding():
 				aspath.RemoveDouble()
 
 				as0 = aspath.GetIntAS0()
+
 ###########
 
 				if (self.prefas0.has_key((pref, leng)))==False:
@@ -707,7 +633,7 @@ class PrefixAS0Binding():
 
 					for ases in self.prefas0[(pref, leng)]:
 						
-						if as0 == ases.GetIntegerAs():
+						if as0 == ases:
 							
 							foundAS = True
 
@@ -728,11 +654,9 @@ class PrefixAS0Binding():
 						
 						self.prefas0[temp_prefix].append(temp_as_prefix)
 
-
 #########################
 
 #########################
-
 
 	def ParseUpdateAnnounced(self, data, as0, source, time):
 
@@ -747,14 +671,13 @@ class PrefixAS0Binding():
 				temp_as_prefix.InsertSource(source) 
 
 				self.prefas0[temp_prefix] = [temp_as_prefix]	
-				
 
 			else:
 				foundAS=False
 
 				for ases in self.prefas0[(elem.prefix, elem.len)]:
 						
-					if as0 == ases.GetIntegerAs():
+					if as0 == ases:
 							
 						foundAS = True
 
@@ -783,10 +706,8 @@ class PrefixAS0Binding():
 						#print ""
 						#print str(member.AS)
 					#print "\n--------------------\n\n"
-						
-					
-#########################
 
+#########################
 
 	def ParseUpdateWithdrawn(self, data, source, time):
 
@@ -794,12 +715,9 @@ class PrefixAS0Binding():
 			if self.prefas0.has_key((elem.prefix, elem.len)):
 				for ases in self.prefas0[(elem.prefix, elem.len)]:
 					ases.RemoveSource(source)
-					ases.CheckAndDeactivate(time)  
-
-
+					ases.CheckAndDeactivate(time)
 
 #########################
-
 
 	def FileWritePrefInf(self, filename):
 
@@ -812,7 +730,7 @@ class PrefixAS0Binding():
 					+ "/" + str(elem[1]) + "\n")
 		
 			for el in self.prefas0[elem]:
-				f1.write("\nSource AS:               " + str(el.GetStringAs()))
+				f1.write("\nSource AS:               " + str(el))
 				f1.write("\nTime of Activation:      "+str(el.timeOfActivation))
 				f1.write("\nTotal Active Time:       " + str(el.totalTime))
 				f1.write("\nRepetition:              " + str(el.repetition))
@@ -826,9 +744,7 @@ class PrefixAS0Binding():
 
 		f1.close()
 
-
 #########################
-
 
 	def FileWriteRepInf(self, filename):
 
@@ -860,9 +776,7 @@ class PrefixAS0Binding():
 
 		f1.close()
 
-
 #########################
-
 
 	def FileWriteRep(self, filename):
 
@@ -884,11 +798,7 @@ class PrefixAS0Binding():
 
 		f1.close()		
 
-
-
-
 #########################
-
 
 	def WinCalculation(self, window_stop, time_window):
 		
@@ -903,12 +813,10 @@ class PrefixAS0Binding():
 					#of next window			
 					el.DeactivateEndWin(window_stop)		
 		
-
-
 		for elem in self.prefas0.keys():
 
 			for el in self.prefas0[elem]:
-				temp_as0 = el.GetIntegerAs()
+				temp_as0 = el
 			
 				if (self.asPrefRep.has_key(temp_as0))==False:
 					tempAsPrefRep = AsPrefixRep()
@@ -925,8 +833,6 @@ class PrefixAS0Binding():
 											el.TimePercentageRep(time_window))
 
 					self.asPrefRep[temp_as0]=tempAsPrefRep
-
-
 
 		for elem in self.prefas0.keys():
 			for el in self.prefas0[elem]:
@@ -963,9 +869,6 @@ class PrefixAS0Binding():
 				tpl = tpl + ( 0, )
 
 		self.selectedAS_rep_history.append( tpl )
-		
-
-
 
 #################################################
 #						#
@@ -1053,7 +956,7 @@ methods with requested data.
 
 ################################################
 
-class AsPrefix(As):
+class AsPrefix(int):
 
 	def __init__(self, AS):		#prima int broj AS-a
 		self.AS = AS
@@ -1063,77 +966,56 @@ class AsPrefix(As):
 		self.repetition = 0
 
 	def SetTimeOfActivation(self, time):
-
 		if self.timeOfActivation==0:
-
 			self.timeOfActivation = time
 			self.repetition = self.repetition + 1
 
-
 	def DeactivateEndWin(self, time):
-		
 		self.totalTime = self.totalTime + (time-self.timeOfActivation)	
 		self.timeOfActivation = time
 		self.repetition = 1
 
-
 	def Deactivate(self, time):
-		
 		self.totalTime = self.totalTime + (time-self.timeOfActivation)	
 		self.timeOfActivation = 0
 
-
 	def InsertSource(self, routerid):
-
 		if routerid in self.listOfRouters:
 			pass
 		else:
 			self.listOfRouters.append(routerid)
 
-
 	def RemoveSource(self, routerid):
-		
 		if routerid in self.listOfRouters:
 			self.listOfRouters.remove(routerid)
 
-
 	def CheckAndDeactivate(self, time):
-
 		if len(self.listOfRouters)==0:
 			if self.timeOfActivation != 0:
 				self.Deactivate(time) 
 
-
 	def TimePercentage(self, winTime):
-
 		if self.totalTime != 0:
 			return float(self.totalTime)/winTime
 		else:
 			return 0.0
-	
 
 	def TimePercentageRep(self, winTime):
-
 		if self.totalTime != 0:
 			return float(self.totalTime)/(winTime*self.repetition)
 		else:
 			return 0.0
-
 	
 	def CurrentTimePer(self, time, timeWinCur):
-
 		if self.timeOfActivation!=0:
 
 			return (self.totalTime + (time-self.timeOfActivation)) / timeWinCur
 		else:
 			return (self.totalTime) / timeWinCur
 
-
-
 ################################################
 
 ################################################
-
 
 class AsPrefixRep():
 
@@ -1142,17 +1024,14 @@ class AsPrefixRep():
 		self.totalActiveSum = 0
 		self.totalActiveSumRep = 0
 
-
 	def IncreaseSum(self, inc):
 		self.totalActiveSum = self.totalActiveSum + inc
 
 		if inc != 0.0:
 			self.numberPref += 1
 
-
 	def IncreaseSumRep(self, inc):
 		self.totalActiveSumRep = self.totalActiveSumRep + inc
-
 
 	def GetRep (self):
 		if self.numberPref != 0:
@@ -1160,8 +1039,6 @@ class AsPrefixRep():
 				(2 * self.numberPref) )
 		else:
 			return 1
-
-
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -1171,36 +1048,31 @@ class AsPrefixRep():
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 #for converting minutes to string for the graph
+
 def formatMinutes( num ):
 	num /= 60
-	
 	tmp_str = ""
 	
 	if min >= 60:
-		
 		if num / 60 < 10:
 			tmp_str += "0"
-						
+					
 		tmp_str += str ( int(num / 60) )
-			
 		tmp_str += ":"
 		
 		if num % 60 < 10:
 			tmp_str += "0"
 			
 		tmp_str += str ( int(num % 60) )
-		
 	else:
 		tmp_str += "00"
 		tmp_str += ":"
 		tmp_str += str ( int(num) )
-		
 	return tmp_str
-
-
 
 #--------------------------------------------
 #-------------------------------------------- 
+
 class Print():
 	"""
 	Static class for controlling print outs to the console. It depends on
@@ -1218,5 +1090,3 @@ class Print():
 		#for now its only 1 or 0, so we can put if
 		if Print.level:
 			print string
-		
-

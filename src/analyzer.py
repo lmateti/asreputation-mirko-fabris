@@ -30,25 +30,24 @@ import shutil
 from pychart import *
 from core import Print
 
-UPDATES_DIR = "./UP"
-
-TEXT_OUTPUT_LINKS = './out_links/Reputations'
-
-
-TEXT_OUTPUT_PREF1 = './out/Prefixes_Source_AS_information'
-TEXT_OUTPUT_PREF2 = './out/ASes_prefix_percentage'
-TEXT_OUTPUT_PREF3 = './out/ASes_reputation'
-TEXT_OUTPUT_PREF4 = './out/RIB_Prefixes_Source_AS_information'
-        
-        
-
-
-
 class Analyzer:
 
     def __init__(self, time_start, time_window, time_limit, preparsed_RIB,
-                 selectedAS, text_output, graph_x, graph_y):
+                 selectedAS, text_output, graph_x, graph_y, 
+		 updates_input, linksRep_output, prefInf_output, prefPerc_output,
+		 prefRep_output, rib_output, debug):
         
+	#Input UPDATE folder path
+	self.updates_dir = updates_input
+		
+	#Output folder paths and filenames
+	self.text_output_prefixSourceInformation = prefInf_output
+	self.text_output_prefixPercentage = prefPerc_output
+	self.text_output_prefixReputation = prefRep_output
+	self.text_output_prefixRIB = rib_output
+		
+	self.text_output_linksReputation = linksRep_output
+		
         #duration of window (in seconds)
         self.time_win = time_window
         self.time_start = time_start
@@ -63,19 +62,19 @@ class Analyzer:
         self.size_x = graph_x
         self.size_y = graph_y
 
-        
         #directory containing UPDATE dumps
-        self.file_list = glob.glob( UPDATES_DIR + "/*.*")                         
+        self.file_list = glob.glob( self.updates_dir + "/*.*")                         
         self.file_list.sort()
         
-
+        #Debuging mode
+        self.debug = debug
     
     #---------------------------------------------------------------------------
     #---------------------------------------------------------------------------
     #---------------------------------------------------------------------------
     def analyzeLinkBindings(self, gama, delta):    
         
-        links = core.PrefixPath( self.selectedAS, gama, delta )
+        links = core.PrefixPath( self.selectedAS, gama, delta, self.debug )
         
         print "Parsing RIB..."
         links.ReadRIB(self.time_start, self.preparsed_RIB)
@@ -130,7 +129,7 @@ class Analyzer:
                             
                         links.WinCalc( time_stop )
                         if self.text_output:
-                            links.FileWriteRep(TEXT_OUTPUT_LINKS + 
+                            links.FileWriteRep(self.text_output_linksReputation + 
                                                '_' + str(current_window))
                         
                         time_stop = time_stop + self.time_win
@@ -181,7 +180,7 @@ class Analyzer:
         if calc > 0.25:
             links.WinCalc( time_stop )
             if self.text_output:
-                links.FileWriteRep(TEXT_OUTPUT_LINKS + '_' +str(current_window))
+                links.FileWriteRep(self.text_output_linksReputation + '_' +str(current_window))
         
         print "Finished computation of last window."
         
@@ -283,14 +282,14 @@ class Analyzer:
     #---------------------------------------------------------------------------
     def analyzePrefBindings(self, alpha):    
      
-        bindings = core.PrefixAS0Binding( self.selectedAS, alpha )        
+        bindings = core.PrefixAS0Binding( self.selectedAS, alpha, self.debug )        
         print "Parsing RIB..."
         bindings.ReadRIB(self.time_start, self.preparsed_RIB)
         print "Finished parsing RIB"
         
         
         if self.text_output:
-            bindings.FileWritePrefInf(TEXT_OUTPUT_PREF4)
+            bindings.FileWritePrefInf(self.text_output_prefixRIB)
     
         #counter for UPDATE dumps   
         file_list_counter=0
@@ -341,11 +340,11 @@ class Analyzer:
                         
                         bindings.WinCalculation(time_stop, self.time_win)
                         if self.text_output:
-                            bindings.FileWritePrefInf( TEXT_OUTPUT_PREF1 + '_' + 
-                                                       str(current_window))
-                            bindings.FileWriteRepInf( TEXT_OUTPUT_PREF2 
+                            bindings.FileWritePrefInf( self.text_output_prefixSourceInformation 
+													+ '_' + str(current_window))
+                            bindings.FileWriteRepInf( self.text_output_prefixPercentage 
                                                     + '_' + str(current_window))
-                            bindings.FileWriteRep( TEXT_OUTPUT_PREF3 
+                            bindings.FileWriteRep( self.text_output_prefixReputation 
                                                    + '_' + str(current_window))
         
                         time_stop = time_stop + self.time_win
@@ -401,9 +400,9 @@ class Analyzer:
         
         bindings.WinCalculation(time_stop, tmp_time_win)
         if self.text_output:
-            bindings.FileWritePrefInf(TEXT_OUTPUT_PREF1+'_'+str(current_window))
-            bindings.FileWriteRepInf(TEXT_OUTPUT_PREF2+'_'+ str(current_window))
-            bindings.FileWriteRep(TEXT_OUTPUT_PREF3 + '_' + str(current_window))
+            bindings.FileWritePrefInf(self.text_output_prefixSourceInformation + '_' + str(current_window))
+            bindings.FileWriteRepInf(self.text_output_prefixPercentage + '_' + str(current_window))
+            bindings.FileWriteRep(self.text_output_prefixReputation + '_' + str(current_window))
         
         print "Finished computing of last window"
     
