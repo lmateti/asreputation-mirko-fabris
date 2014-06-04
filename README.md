@@ -3,6 +3,13 @@ asreputation-luka-matetic
 
 Changes of the AS reputation code written by Tomislav Dejdar and reworked Mirko Fabris done by Luka Matetic
 
+In order to run this program, several prerequesets are needed:
+- dpkt-1.7 or higher
+- pybgpdump.py 
+- ipaddr.py
+- pychart
+- ghostscript installed
+
 Please follow these steps for a quick start with this program:
 
 1. Download RIB and UPDATES data from a collector of choice.
