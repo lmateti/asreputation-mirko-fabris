@@ -22,6 +22,8 @@ import time
 from analyzer import Analyzer
 import ConfigParser
 from core import Print
+from core import PrefixAS0Binding
+from core import PrefixPath
 import cProfile
 import pstats
 
@@ -136,31 +138,43 @@ except:
     print "Error loading configuration from config.ini:\n---", sys.exc_info()[1]
     exit() 
     
-    
+#-----------------------------------------    
     
 def run():
-    analyzer = Analyzer( time_start, time_window, time_limit, preparsed_RIB, 
-                         selectedAS, text_output, size_x, size_y,
-			 updates_input, linksRep_output, prefInf_output, prefPerc_output,
-			 prefRep_output, rib_output, debug)
-    
-    
-    #so we can calculate total time this program used
+
+    # Starting point & total time calculation 
     t = time.time()
-    
-    
-    
+        
     #####################################################################
+    # PrefixPath and PrefixAS0Binding instances are made according to choice made in confing.ini
+    # It is assumed that new analysis methods won't be added on a regular basis...
+    links = 0
+    pref = 0
     for opt in analysis_list:
         if opt == ANALYSIS_LINK:
-            analyzer.analyzeLinkBindings( gama, delta )
+            links = PrefixPath(selectedAS, gama, delta)
+        if opt == ANALYSIS_PREF:
+            pref = PrefixAS0Binding(selectedAS, alpha)
+            
+    #####################################################################
+    analyzer = Analyzer(time_start, time_window, time_limit, preparsed_RIB, 
+                        selectedAS, text_output, size_x, size_y,
+			updates_input, linksRep_output, prefInf_output, prefPerc_output,
+			prefRep_output, rib_output, debug, links, pref)
+
+    #####################################################################
+    # Depending on config.ini, one or both analysis are ran
+    for opt in analysis_list:
+        if opt == ANALYSIS_LINK:
+            analyzer.analyzeLinkBindings(gama, delta)
         if opt == ANALYSIS_PREF:
             analyzer.analyzePrefBindings(alpha)
-    #####################################################################
+            
 
-    
+    # Finishing point & end of total time calculation
     print "Total time spent: %.2f  minutes" % ((time.time() - t)/60)
 
+#-----------------------------------------
 
 if profiling:
     cProfile.run('run()', 'profiling')

@@ -35,7 +35,7 @@ class Analyzer:
     def __init__(self, time_start, time_window, time_limit, preparsed_RIB,
                  selectedAS, text_output, graph_x, graph_y, 
 		 updates_input, linksRep_output, prefInf_output, prefPerc_output,
-		 prefRep_output, rib_output, debug):
+		 prefRep_output, rib_output, debug, links, pref):
         
 	#Input UPDATE folder path
 	self.updates_dir = updates_input
@@ -68,18 +68,22 @@ class Analyzer:
         
         #Debuging mode
         self.debug = debug
-    
+
+        #Analysis methods
+        self.pref = pref
+        self.links = links
+        
+        #RIB is loaded only once and can be reused in each analysis method
+        print "Parsing RIB..."
+        core.ReadRIB(self.time_start, self.preparsed_RIB, self.debug, self.links, self.pref)
+        print "Finished parsing RIB"
+        
     #---------------------------------------------------------------------------
     #---------------------------------------------------------------------------
     #---------------------------------------------------------------------------
     def analyzeLinkBindings(self, gama, delta):    
         
-        links = core.PrefixPath( self.selectedAS, gama, delta, self.debug )
-        
-        print "Parsing RIB..."
-        links.ReadRIB(self.time_start, self.preparsed_RIB)
-        print "Finished parsing RIB"
-
+        links = self.links
         
         #counter for UPDATE dumps   
         file_list_counter=0
@@ -282,11 +286,7 @@ class Analyzer:
     #---------------------------------------------------------------------------
     def analyzePrefBindings(self, alpha):    
      
-        bindings = core.PrefixAS0Binding( self.selectedAS, alpha, self.debug )        
-        print "Parsing RIB..."
-        bindings.ReadRIB(self.time_start, self.preparsed_RIB)
-        print "Finished parsing RIB"
-        
+        bindings = self.pref
         
         if self.text_output:
             bindings.FileWritePrefInf(self.text_output_prefixRIB)

@@ -226,7 +226,7 @@ class AsPath():
 
 class PrefixPath():
 
-	def __init__(self, selectedAS, gama, delta, debug):
+	def __init__(self, selectedAS, gama, delta):
 
 		#used for storing information about paths for different 
 		#prefix-nexthop pairs
@@ -251,9 +251,6 @@ class PrefixPath():
 
 		self.gama = gama
 		self.delta = delta
-
-		#Used for debuging (set in config.ini)
-		self.debug = debug
 
 #Writes reputations of ASes into output file. 
 #This method is usualy called at the end of each window.
@@ -377,88 +374,27 @@ class PrefixPath():
 #Reads preparsed RIB file
 #Takes filename
 
-	def ReadRIB(self, in_time_start, filename):
+	def AnalyzeRIB(self, in_time_start, pref, leng, source, aspath):
 
-		self.time_start = in_time_start
+                self.time_start = in_time_start
+                
+		#tuple is used for speed gain
+		temp_prefix = (pref, leng, source)	
 
-		#used for printing progress 
-		current_ip = '0'
-
-		f1 = open(filename, 'r')
-
-		debug_counter = 0
-		
-		for line in f1:
-			if self.debug:
-				debug_counter += 1
-				if debug_counter > 100000:
-					return
-			
-			line = line[:-1]
-
-			if line[0]=='P':
-				line = line[8:]
-				temp = line[:line.find('/')]
-				
-				#------------------ispis----------------
-				temp_ip = temp.split('.')
-				if temp_ip[0] != current_ip:
-					Print.out( "%s.*.*.*" % temp_ip[0] )
-					current_ip = temp_ip[0]
-				
-				try:
-					pref=socket.inet_aton(temp)
-				except:
-					break
-
-				temp = line[line.find('/')+1:]
-				leng = int(temp)
+                # Puts key:
+		#(prefix, lenght, nexthop) |
+		# value: path   in dictionary prefpath
+		if (self.prefpath.has_key(temp_prefix))==False:				
+			self.prefpath[temp_prefix] = aspath	
+			self.PrefNumPut(aspath)
 
 
-			elif line[0]=='F':
-				line = line[6:]
+		#RIBs shouldn't have double paths for same prefixes
+		#in case they do, just use following code
 
-				#next-hop is left in pure string format due to simplicity
-				source = line					
-		
-				
-			elif line[0]=='A':
-		
-				line = line[9:]
-
-				aspath = AsPath()
-
-				pom = line.find('{')
-				if pom!=-1:
-					line = line[:pom-1]
-
-				cols = line.split()
-				
-				for elem in cols:
-					try:
-						el = int(elem)
-						aspath.Postpend(el)
-					except:
-						pass
-				
-				aspath.RemoveDouble()
-
-				#tuple is used for speed gain
-				temp_prefix = (pref, leng, source)	
-
-#Puts key: (prefix, lenght, nexthop) | value: path   in dictionary prefpath
-
-				if (self.prefpath.has_key(temp_prefix))==False:				
-					self.prefpath[temp_prefix] = aspath	
-					self.PrefNumPut(aspath)
-
-
-				#RIBs shouldn't have double paths for same prefixes
-				#in case they do, just use following code
-
-#				else:
-#					self.prefpath[temp_prefix] = aspath
-#					print "\n\n!!!!!!      \tDOUBLE PATH IN RIB\t    !!!!!!\n\n"
+#		else:
+#			self.prefpath[temp_prefix] = aspath
+#			print "\n\n!!!!!!      \tDOUBLE PATH IN RIB\t    !!!!!!\n\n"
 
 #Parse updates announced
 #Every update for new prefix-nexthop combination is put in dictionary prefpath
@@ -526,7 +462,7 @@ class PrefixPath():
 
 class PrefixAS0Binding():
 
-	def __init__(self, selectedAS, alpha, debug):
+	def __init__(self, selectedAS, alpha):
 
 		self.prefas0 = {}
 		self.asPrefRep = {}
@@ -541,118 +477,58 @@ class PrefixAS0Binding():
 		self.alpha = alpha
 		
 		#for graph time calculation, it is set to time_start
-		self.time_start = 0   
-		
-		#Used for debuging (set in config.ini)
-		self.debug = debug
+		self.time_start = 0
+
+		#temp_prefix & temp_as_prefix used for AnalyzeRIB - needs to be remembered
+		#Subject for future change!
+		self.temp_prefix = 0
+		self.temp_as_prefix = 0
 
 #########################
 	
-	def ReadRIB(self, time, filename):
+	def AnalyzeRIB(self, time, pref, leng, source, aspath):
 
-		self.time_start = time
-
-		#this is used for printing progress
-		current_ip = '0'
-
-		f1 = open(filename, 'r')
-		
-		debug_count = 0
-		
-		for line in f1:
-			if self.debug:
-				debug_count += 1
-				if debug_count > 100000:
-					return
-			
-			line = line[:-1]
-
-			if line[0]=='P':
-				line = line[8:]
-				temp = line[:line.find('/')]
-				
-				#------------------ispis----------------
-				temp_ip = temp.split('.')
-				if temp_ip[0] != current_ip:
-					Print.out( "%s.*.*.*" % temp_ip[0] )
-					current_ip = temp_ip[0]
-				
-				try:
-					pref=socket.inet_aton(temp)
-				except:
-					break
-
-				temp = line[line.find('/')+1:]
-				leng = int(temp)
-	
-
-			elif line[0]=='F':
-				line = line[6:]
-
-				#next-hop is left in pure string format due to simplicity
-				source = line	
-
-
-			elif line[0]=='A':
-		
-				line = line[9:]
-
-				aspath = AsPath()
-
-				pom = line.find('{')
-				if pom!=-1:
-					line = line[:pom-1]
-
-				cols = line.split()
-				
-				for elem in cols:
-					try:
-						el = int(elem)
-						aspath.Postpend(el)
-					except:
-						pass
-				
-				aspath.RemoveDouble()
-
-				as0 = aspath.GetIntAS0()
+                self.time_start = time
+                
+		as0 = aspath.GetIntAS0()
 
 ###########
-
-				if (self.prefas0.has_key((pref, leng)))==False:
+		
+		if (self.prefas0.has_key((pref, leng)))==False:
 									
-					temp_prefix = (pref, leng)
+			self.temp_prefix = (pref, leng)
 
-					temp_as_prefix = AsPrefix(as0)
-					temp_as_prefix.SetTimeOfActivation(time)
-					temp_as_prefix.InsertSource(source) 
+			self.temp_as_prefix = AsPrefix(as0)
+			self.temp_as_prefix.SetTimeOfActivation(time)
+			self.temp_as_prefix.InsertSource(source) 
 
-					self.prefas0[temp_prefix] = [temp_as_prefix]
+			self.prefas0[self.temp_prefix] = [self.temp_as_prefix]
+
+		else:
+			foundAS=False
+
+			for ases in self.prefas0[(pref, leng)]:
+				
+                                if as0 == ases:
+							
+					foundAS = True
+
+					ases.InsertSource(source)
+					ases.SetTimeOfActivation(time)	
 
 				else:
-					foundAS=False
 
-					for ases in self.prefas0[(pref, leng)]:
-						
-						if as0 == ases:
-							
-							foundAS = True
-
-							ases.InsertSource(source)
-							ases.SetTimeOfActivation(time)	
-
-						else:
-
-							ases.RemoveSource(source)
-							ases.CheckAndDeactivate(time)  
+					ases.RemoveSource(source)
+					ases.CheckAndDeactivate(time)  
 	 
 						
-					if foundAS == False:
+			if foundAS == False:
 					
-						temp_as_prefix = AsPrefix(as0)
-						temp_as_prefix.SetTimeOfActivation(time)
-						temp_as_prefix.InsertSource(source)
-						
-						self.prefas0[temp_prefix].append(temp_as_prefix)
+                                self.temp_as_prefix = AsPrefix(as0)
+				self.temp_as_prefix.SetTimeOfActivation(time)
+				self.temp_as_prefix.InsertSource(source)
+				
+				self.prefas0[self.temp_prefix].append(self.temp_as_prefix)
 
 #########################
 
@@ -1090,3 +966,96 @@ class Print():
 		#for now its only 1 or 0, so we can put if
 		if Print.level:
 			print string
+
+#--------------------------------------------
+
+''' Static method used for reading RIB data in Analyzer '''
+def ReadRIB(time_start, filename, debug, linksAnalysis, prefAnalysis):
+
+        #temp fix
+        temp_prefix = 0
+        
+        #used for analysis control
+        linksChoice = True
+        prefChoice = True
+        
+        #used for printing progress 
+	current_ip = '0'
+
+	f1 = open(filename, 'r')
+
+	debug_counter = 0
+		
+	for line in f1:
+		if debug:
+			debug_counter += 1
+			if debug_counter > 100000:
+				return
+			
+		line = line[:-1]
+
+		if line[0]=='P':
+			line = line[8:]
+			temp = line[:line.find('/')]
+				
+			#------------------ispis----------------
+			temp_ip = temp.split('.')
+			if temp_ip[0] != current_ip:
+				Print.out( "%s.*.*.*" % temp_ip[0] )
+				current_ip = temp_ip[0]
+				
+			try:
+				pref=socket.inet_aton(temp)
+			except:
+				break
+
+			temp = line[line.find('/')+1:]
+			leng = int(temp)
+
+
+		elif line[0]=='F':
+			line = line[6:]
+
+			#next-hop is left in pure string format due to simplicity
+			source = line					
+		
+				
+		elif line[0]=='A':
+		
+			line = line[9:]
+
+			aspath = AsPath()
+
+			pom = line.find('{')
+			if pom!=-1:
+				line = line[:pom-1]
+
+			cols = line.split()
+				
+			for elem in cols:
+				try:
+					el = int(elem)
+					aspath.Postpend(el)
+				except:
+					pass
+				
+			aspath.RemoveDouble()
+
+                        # ---------------------------
+			# Analysis control (speed up)
+			try:
+                                if prefChoice:
+                                        # here we call prefix analyze method
+                                        prefAnalysis.AnalyzeRIB(time_start, pref, leng, source, aspath)
+			except:
+                                print "prefAnalysis choice not detected or an error occured."
+                                prefChoice = False
+                        #############################
+			try:
+                                if linksChoice:
+                                        # here we call link analyze method
+                                        linksAnalysis.AnalyzeRIB(time_start, pref, leng, source, aspath)
+			except:
+                                print "linksAnalysis choice not detected or an error occured." 
+                                linksChoice = False
+
